@@ -81,6 +81,8 @@ socket.on("joinRoom", async ({ playerName, userId, amount, expoPushToken }) => {
         return socket.emit("roomFull", "Room is already full.");
     }
 
+   const playerIndex = room.players.length;
+
     // Assign player symbol
     const symbols = ["X", "O", "B"];
     const playerNumber = room.players.length + 1;
@@ -96,12 +98,17 @@ socket.on("joinRoom", async ({ playerName, userId, amount, expoPushToken }) => {
         amount,
         playerNumber,
         symbol: playerSymbol,
-        expoPushToken
+        expoPushToken,
+        playerIndex, // Assign player index here
     });
 
     // Join the socket room
     socket.join(room.roomId);
     console.log(`✅ ${playerName} joined Room ${room.roomId} as Player ${playerNumber}`);
+
+  
+  // Send the assigned player index back to the client
+  socket.emit("playerIndexAssigned", { playerIndex });
 
     // **NEW** - Emit event to inform the player they successfully joined
     socket.emit("roomJoined", { roomId: room.roomId, amount, players: room.players });
