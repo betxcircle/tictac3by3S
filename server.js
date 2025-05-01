@@ -108,7 +108,11 @@ socket.on("joinRoom", async ({ playerName, userId, amount, expoPushToken }) => {
 
   
   // Send the assigned player index back to the client
-  socket.emit("playerIndexAssigned", { playerIndex });
+socket.emit("playerAssigned", {
+  playerIndex, // should be 0, 1, or 2
+  symbol: ["X", "O", "B"][playerIndex],
+});
+
 
     // **NEW** - Emit event to inform the player they successfully joined
     socket.emit("roomJoined", { roomId: room.roomId, amount, players: room.players });
