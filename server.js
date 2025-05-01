@@ -402,15 +402,18 @@ console.log('Winner balance updated successfully');
               console.log('Winner saved to database:', newWinner);
 
               // Save loser record
-          for (const loserPlayer of loserPlayers) {
-        const newLoser = new LoserModel({
-              roomId,
-              loserName: loserPlayer.userId,
-              totalBet
-            });
+         for (const loserPlayer of loserPlayers) {
+  const newLoser = new LoserModel({
+    roomId,
+    loserName: loserPlayer.userId,
+    totalBet
+  });
+  await newLoser.save();
+  console.log('Loser saved to database:', newLoser);
+}
 
-              await newLoser.save();
-              console.log('Loser saved to database:', newLoser);
+
+             
             } else {
               console.error('Winner user not found');
             }
