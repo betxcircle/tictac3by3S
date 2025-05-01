@@ -45,7 +45,7 @@ socket.on("joinRoom", async ({ playerName, userId, amount, expoPushToken }) => {
     }
 
     // Look for an existing room with space
-    let room = Object.values(activeRooms).find(r => r.amount === amount && r.players.length < 2);
+    let room = Object.values(activeRooms).find(r => r.amount === amount && r.players.length < 3);
 
     if (room) {
         console.log(`🔍 Found an existing room: ${room.roomId} with ${room.players.length} players.`);
@@ -76,13 +76,13 @@ socket.on("joinRoom", async ({ playerName, userId, amount, expoPushToken }) => {
     }
 
     // If room is full, reject the request
-    if (room.players.length >= 2) {
+    if (room.players.length >= 3) {
         console.log(`🚫 Room ${room.roomId} is full.`);
         return socket.emit("roomFull", "Room is already full.");
     }
 
     // Assign player symbol
-    const symbols = ["X", "O"];
+    const symbols = ["X", "O", "B"];
     const playerNumber = room.players.length + 1;
     const playerSymbol = symbols[playerNumber - 1];
 
@@ -112,8 +112,8 @@ socket.on("joinRoom", async ({ playerName, userId, amount, expoPushToken }) => {
 
     console.log(`🔄 Updated Room ${room.roomId} Players List:`, room.players);
 
-    // If 2 players are present, start the game
-    if (room.players.length === 2) {
+    // If 3 players are present, start the game
+    if (room.players.length === 3) {
        startGame(room)
         console.log(`🎮 Game in Room ${room.roomId} is READY!`);
 
@@ -151,36 +151,40 @@ async function startGame(room) {
         // Fetch both players from the database
         const player1 = await OdinCircledbModel.findById(room.players[0].userId);
         const player2 = await OdinCircledbModel.findById(room.players[1].userId);
+        const player3 = await OdinCircledbModel.findById(room.players[2].userId);
 
-        if (!player1 || !player2) {
-            console.log("❌ Error: One or both players not found in the database.");
+        if (!player1 || !player2 || !player3) {
+            console.log("❌ Error: One, two or three players not found in the database.");
             io.to(room.roomId).emit("invalidGameStart", "Players not found");
             return;
         }
 
         // Check if both players have enough balance
-        if (player1.wallet.balance < room.amount || player2.wallet.balance < room.amount) {
-            console.log("❌ Error: One or both players have insufficient balance.");
-            io.to(room.roomId).emit("invalidGameStart", "One or both players have insufficient balance");
+        if (player1.wallet.balance < room.amount || player2.wallet.balance < room.amount || player3.wallet.balance < room.amount) {
+            console.log("❌ Error: One, two or three or both players have insufficient balance.");
+            io.to(room.roomId).emit("invalidGameStart", "One or all players have insufficient balance");
             return;
         }
 
         // Deduct the balance from both players
         player1.wallet.balance -= room.amount;
         player2.wallet.balance -= room.amount;
+        player3.wallet.balance -= room.amount;
 
         // Save the updated balances
         await player1.save();
         await player2.save();
+        await player3.save();
 
         // Update total bet in the room
-        room.totalBet = room.amount * 2;
+        room.totalBet = room.amount * 3;
 
         console.log(`💰 Balance deducted from both players. Total Bet: ${room.totalBet}`);
 
         // Emit updated balances to players
         io.to(player1.socketId).emit("balanceUpdated", { newBalance: player1.wallet.balance });
         io.to(player2.socketId).emit("balanceUpdated", { newBalance: player2.wallet.balance });
+        io.to(player2.socketId).emit("balanceUpdated", { newBalance: player3.wallet.balance });
 
         // Emit game start event
        // io.to(room.roomId).emit("gameStart", { message: "Game is starting!", room });
@@ -204,7 +208,7 @@ const startTurnTimer = (roomId) => {
     console.log(`⏰ Player took too long. Switching turn for room ${roomId}`);
 
     // Switch turn
-    room.currentPlayer = (room.currentPlayer + 1) % 2;
+    room.currentPlayer = (room.currentPlayer + 1) % 3;
     const currentPlayer = room.players[room.currentPlayer];
 
     if (!currentPlayer) {
@@ -242,7 +246,7 @@ const startTurnTimer = (roomId) => {
     return socket.emit('invalidMove', 'Room not found');
   }
 
-  const currentPlayerIndex = room.currentPlayer % 2;
+  const currentPlayerIndex = room.currentPlayer % 3;
   const currentPlayer = room.players[currentPlayerIndex];
 
      // Check if currentPlayer exists and has userId
@@ -254,7 +258,7 @@ const startTurnTimer = (roomId) => {
   }
 
   // Check if there's only one player in the room
-  if (room.players.length < 2) {
+  if (room.players.length < 3) {
     return socket.emit('invalidMove', 'Waiting for another player to join');
   }
 
@@ -272,7 +276,7 @@ const startTurnTimer = (roomId) => {
 
    // Change turn
 // Change turn
-    room.currentPlayer = (room.currentPlayer + 1) % 2;
+    room.currentPlayer = (room.currentPlayer + 1) % 3;
 
     // ⚠️ Fetch the *new* current player based on updated index
     const nextPlayer = room.players[room.currentPlayer];
@@ -410,7 +414,7 @@ console.log('Winner balance updated successfully');
 
         // Reset the game state for a new game
         room.board = Array(16).fill(null);
-        room.startingPlayer = (room.startingPlayer + 1) % 2;
+        room.startingPlayer = (room.startingPlayer + 1) % 3;
         room.currentPlayer = room.startingPlayer;
 
         io.to(roomId).emit('newGame', 
@@ -425,70 +429,69 @@ console.log('Winner balance updated successfully');
 });
   
 socket.on("disconnect", async () => {
-    console.log(`❌ User disconnected: ${socket.id}`);
+  console.log(`❌ User disconnected: ${socket.id}`);
 
-    for (const roomId in activeRooms) {
-        const room = activeRooms[roomId];
+  for (const roomId in activeRooms) {
+    const room = activeRooms[roomId];
 
-        if (room) {
-            const playerIndex = room.players.findIndex((player) => player.socketId === socket.id);
+    if (room) {
+      const playerIndex = room.players.findIndex((player) => player.socketId === socket.id);
 
-            if (playerIndex !== -1) {
-                const [disconnectedPlayer] = room.players.splice(playerIndex, 1);
+      if (playerIndex !== -1) {
+        const [disconnectedPlayer] = room.players.splice(playerIndex, 1);
 
-                io.to(roomId).emit("playerLeft", { 
-                    message: `${disconnectedPlayer.playerName} left the game`, 
-                    roomId 
-                });
+        io.to(roomId).emit("playerLeft", { 
+          message: `${disconnectedPlayer.playerName} left the game`, 
+          roomId 
+        });
 
-                // **Check if the game already has a winner before awarding the remaining player**
-                const winnerSymbol = checkWin(room.board);
-                if (winnerSymbol) {
-                    console.log("🏆 Game already has a winner, no need to award the remaining player.");
-                    return;
-                }
-
-                // If one player remains and there's NO existing winner, award them as default winner
-                if (room.players.length === 1) {
-                    const winnerPlayer = room.players[0];
-                    console.log(`🏆 ${winnerPlayer.playerName} is the default winner because the opponent disconnected.`);
-
-                    try {
-                        // Fetch the winner from the database
-                        const winnerUser = await OdinCircledbModel.findById(winnerPlayer.userId);
-                        if (winnerUser) {
-                            // Award totalBet to the remaining player
-                            winnerUser.wallet.cashoutbalance += room.totalBet;
-                            await winnerUser.save();
-
-                            // Emit winner event
-                            io.to(winnerPlayer.socketId).emit("winnerScreen", {
-                                result: `You win! Opponent disconnected.`,
-                                totalBet: room.totalBet,
-                                winnerUserId: winnerPlayer.userId,
-                                winnerPlayer
-                            });
-
-                            console.log(`💰 ${winnerPlayer.playerName} received ${room.totalBet} coins as the default winner.`);
-                        } else {
-                            console.error("❌ Winner user not found in the database.");
-                        }
-                    } catch (error) {
-                        console.error("❌ Error updating winner balance on opponent disconnect:", error);
-                    }
-
-                    // Remove the room after awarding the winner
-                    delete activeRooms[roomId];
-                }
-
-                // If no players remain, delete the room
-                if (room.players.length === 0) {
-                    delete activeRooms[roomId];
-                }
-            }
+        // Check if the game already has a winner
+        const winnerSymbol = checkWin(room.board);
+        if (winnerSymbol) {
+          console.log("🏆 Game already has a winner, no default win needed.");
+          continue;
         }
+
+        // If 2 players disconnected (1 left), award default win
+        if (room.players.length === 1) {
+          const winnerPlayer = room.players[0];
+          console.log(`🏆 ${winnerPlayer.playerName} is the default winner — others disconnected.`);
+
+          try {
+            const winnerUser = await OdinCircledbModel.findById(winnerPlayer.userId);
+            if (winnerUser) {
+              winnerUser.wallet.cashoutbalance += room.totalBet;
+              await winnerUser.save();
+
+              io.to(winnerPlayer.socketId).emit("winnerScreen", {
+                result: `You win! Opponents disconnected.`,
+                totalBet: room.totalBet,
+                winnerUserId: winnerPlayer.userId,
+                winnerPlayer
+              });
+
+              console.log(`💰 ${winnerPlayer.playerName} awarded ${room.totalBet} coins.`);
+            } else {
+              console.error("❌ Winner user not found in DB.");
+            }
+          } catch (error) {
+            console.error("❌ Error awarding default win:", error);
+          }
+
+          // Remove the room after awarding
+          delete activeRooms[roomId];
+        }
+
+        // If no players remain at all, delete the room
+        if (room.players.length === 0) {
+          console.log(`🗑 Room ${roomId} deleted — all players disconnected.`);
+          delete activeRooms[roomId];
+        }
+      }
     }
-})
+  }
+});
+
 });
 
 
