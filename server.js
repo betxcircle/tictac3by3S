@@ -126,6 +126,7 @@ socket.emit("playerAssigned", {
     // If 3 players are present, start the game
     if (room.players.length === 3) {
        startGame(room)
+       room.currentPlayer = room.players[0].userId; // Set current turn to first player
         console.log(`🎮 Game in Room ${room.roomId} is READY!`);
 
         io.to(room.roomId).emit("gameReady", {
