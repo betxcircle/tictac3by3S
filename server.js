@@ -309,7 +309,7 @@ const startTurnTimer = (roomId) => {
         clearTimeout(room.turnTimeout); // **Stop turn timer if someone wins**
         
         const winnerPlayer = room.players.find(player => player.symbol === winnerSymbol);
-        const loserPlayer = room.players.find(player => player.symbol !== winnerSymbol);
+       const loserPlayers = room.players.filter(player => player.symbol !== winnerSymbol);
       
         if (winnerPlayer && loserPlayer) {
           const winnerUserId = winnerPlayer.userId;
@@ -347,12 +347,15 @@ console.log('Winner balance updated successfully');
     winnerPlayer 
   });
 
+  loserPlayers.forEach(loserPlayer => {
   io.to(loserPlayer.socketId).emit('loserScreen', { 
     result: gameResult, 
     totalBet, 
-    loserUserId, 
+    loserUserId: loserPlayer.userId, 
     loserPlayer 
   });
+});
+
 
 
           try {
@@ -399,11 +402,13 @@ console.log('Winner balance updated successfully');
               console.log('Winner saved to database:', newWinner);
 
               // Save loser record
-              const newLoser = new LoserModel({
-                roomId,
-                loserName: loserUserId,
-                totalBet: totalBet,
-              });
+          for (const loserPlayer of loserPlayers) {
+        const newLoser = new LoserModel({
+              roomId,
+              loserName: loserPlayer.userId,
+              totalBet
+            });
+
               await newLoser.save();
               console.log('Loser saved to database:', newLoser);
             } else {
