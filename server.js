@@ -313,7 +313,7 @@ const startTurnTimer = (roomId) => {
       
         if (winnerPlayer && loserPlayers) {
           const winnerUserId = winnerPlayer.userId;
-          const loserUserId = loserPlayers.userId;
+          const loserUserId = loserPlayer.userId;
           const gameResult = `${winnerPlayer.name} (${winnerSymbol}) wins!`;
 
           // Access the totalBet from the room object
