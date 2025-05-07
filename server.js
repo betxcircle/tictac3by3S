@@ -522,36 +522,33 @@ function generateRoomId() {
 
 const checkWin = (board) => {
   const winningLines = [
-    // Rows (check 3 consecutive cells)
-    [0, 1, 2], [1, 2, 3], 
-    [4, 5, 6], [5, 6, 7], 
-    [8, 9, 10], [9, 10, 11], 
-    [12, 13, 14], [13, 14, 15], 
+    // Rows
+    [0, 1, 2, 3],
+    [4, 5, 6, 7],
+    [8, 9, 10, 11],
+    [12, 13, 14, 15],
 
-    // Columns (check 3 consecutive cells)
-    [0, 4, 8], [4, 8, 12], 
-    [1, 5, 9], [5, 9, 13], 
-    [2, 6, 10], [6, 10, 14], 
-    [3, 7, 11], [7, 11, 15],
+    // Columns
+    [0, 4, 8, 12],
+    [1, 5, 9, 13],
+    [2, 6, 10, 14],
+    [3, 7, 11, 15],
 
-    // Main Diagonal (check 3 consecutive cells)
-    [0, 5, 10], [5, 10, 15], 
-    [1, 6, 11], [4, 9, 14], 
-
-    // Anti-Diagonal (check 3 consecutive cells)
-    [2, 5, 8], [3, 6, 9], 
-    [6, 9, 12], [7, 10, 13]
+    // Diagonals
+    [0, 5, 10, 15],
+    [3, 6, 9, 12],
   ];
 
   for (let line of winningLines) {
-    const [a, b, c] = line; // Check 3 instead of 4
-    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-      return board[a]; // Return the winning symbol ('X' or 'O')
+    const [a, b, c, d] = line;
+    if (board[a] && board[a] === board[b] && board[a] === board[c] && board[a] === board[d]) {
+      return board[a];
     }
   }
 
-  return null; // No winner yet
+  return null;
 };
+
 
 
 server.listen(5005, () => console.log("🚀 Server running on port 5005"));
