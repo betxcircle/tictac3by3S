@@ -269,11 +269,6 @@ const startTurnTimer = (roomId) => {
     return socket.emit('invalidMove', 'Invalid player state');
   }
 
-  // Check if there's only one player in the room
-  if (room.players.length < 3) {
-    return socket.emit('invalidMove', 'Waiting for another player to join');
-  }
-
   if (socket.id === currentPlayer.socketId) {
     if (room.board[index] === null) {
       room.board[index] = currentPlayer.symbol;
