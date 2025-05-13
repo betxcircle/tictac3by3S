@@ -207,38 +207,45 @@ async function startGame(room) {
 }
 
 
-  
 const startTurnTimer = (roomId) => {
   const room = activeRooms[roomId];
-  if (!room || room.players.length < 2) return;
+  if (!room) return;
 
+  // Clear previous timeout
   if (room.turnTimeout) {
     clearTimeout(room.turnTimeout);
   }
 
+  // Start a new turn timer
   room.turnTimeout = setTimeout(() => {
     console.log(`⏰ Player took too long. Switching turn for room ${roomId}`);
 
-    // Ensure currentPlayer is within bounds
-    if (room.currentPlayer >= room.players.length) {
-        room.currentPlayer = 0;
+    // Defensive: Ensure room still has players
+    if (!room.players || room.players.length === 0) {
+      console.warn(`⚠️ No players in room ${roomId}, skipping turn.`);
+      return;
     }
+
+    // Defensive: Fix out-of-bounds index
+    room.currentPlayer = room.currentPlayer % room.players.length;
 
     // Switch turn
     room.currentPlayer = (room.currentPlayer + 1) % room.players.length;
-
     const currentPlayer = room.players[room.currentPlayer];
+
     if (!currentPlayer || !currentPlayer.userId) {
       console.error("Error: currentPlayer is missing userId");
       return;
     }
 
-    io.to(roomId).emit("turnChange", currentPlayer.userId);
     console.log("🔄 Emitting turnChange:", currentPlayer.userId);
+    io.to(roomId).emit("turnChange", currentPlayer.userId);
 
+    // Restart the timer safely
     setTimeout(() => startTurnTimer(roomId), 100);
   }, 3000);
 };
+
 
 
    
