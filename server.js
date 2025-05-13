@@ -268,7 +268,7 @@ const startTurnTimer = (roomId) => {
     return socket.emit('invalidMove', 'Room not found');
   }
 
-  const currentPlayerIndex = room.currentPlayer % 3;
+ const currentPlayerIndex = room.currentPlayer % room.players.length;
   const currentPlayer = room.players[currentPlayerIndex];
 
      // Check if currentPlayer exists and has userId
@@ -293,7 +293,7 @@ const startTurnTimer = (roomId) => {
 
    // Change turn
 // Change turn
-    room.currentPlayer = (room.currentPlayer + 1) % 3;
+  room.currentPlayer = (room.currentPlayer + 1) % room.players.length;
 
     // ⚠️ Fetch the *new* current player based on updated index
     const nextPlayer = room.players[room.currentPlayer];
@@ -439,7 +439,7 @@ console.log('Winner balance updated successfully');
 
         // Reset the game state for a new game
         room.board = Array(16).fill(null);
-        room.startingPlayer = (room.startingPlayer + 1) % 3;
+       room.startingPlayer = (room.startingPlayer + 1) % room.players.length;
         room.currentPlayer = room.startingPlayer;
 
         io.to(roomId).emit('newGame', 
