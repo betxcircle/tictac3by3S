@@ -196,7 +196,7 @@ async function startGame(room) {
         // Emit updated balances to players
         io.to(player1.socketId).emit("balanceUpdated", { newBalance: player1.wallet.balance });
         io.to(player2.socketId).emit("balanceUpdated", { newBalance: player2.wallet.balance });
-        io.to(player2.socketId).emit("balanceUpdated", { newBalance: player3.wallet.balance });
+        io.to(player3.socketId).emit("balanceUpdated", { newBalance: player3.wallet.balance });
 
         // Emit game start event
        // io.to(room.roomId).emit("gameStart", { message: "Game is starting!", room });
