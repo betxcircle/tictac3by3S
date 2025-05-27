@@ -135,7 +135,7 @@ socket.emit("playerAssigned", {
             amount: room.amount,
         });
 
-        room.currentPlayer = room.startingPlayer;
+        //room.currentPlayer = room.startingPlayer;
         io.to(room.roomId).emit("turnChange", room.currentPlayer);
     }
 });
@@ -227,7 +227,7 @@ const startTurnTimer = (roomId) => {
     }
 
     // Defensive: Fix out-of-bounds index
-    room.currentPlayer = room.currentPlayer % room.players.length;
+    //room.currentPlayer = room.currentPlayer % room.players.length;
 
     // Switch turn
     room.currentPlayer = (room.currentPlayer + 1) % room.players.length;
