@@ -446,12 +446,13 @@ console.log('Winner balance updated successfully');
 
         // Reset the game state for a new game
         room.board = Array(16).fill(null);
-       room.startingPlayer = (room.startingPlayer + 1) % room.players.length;
+        room.startingPlayer = room.currentPlayer;
+       //room.startingPlayer = (room.startingPlayer + 1) % room.players.length;
         //room.currentPlayer = room.startingPlayer;
 
         io.to(roomId).emit('newGame', 
                              { message: "The game has been reset due to a draw. New game starting!",
-                              //startingPlayer: room.startingPlayer 
+                              startingPlayer: room.startingPlayer 
                              });
       }
     } else {
